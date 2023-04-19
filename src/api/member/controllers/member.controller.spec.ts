@@ -1,17 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MemberController } from './member.controller';
 import { MemberService } from '../../../services/members/member.service';
-import { GetMember, WeeklyNumericRanking, WeeklyNumericRankingInput } from '../dto/member.dto';
+import { GetMember, PLAYER_CATEGORY, WeeklyNumericRanking, WeeklyNumericRankingInput } from '../dto/member.dto';
 import { NotFoundException } from '@nestjs/common';
 import { SeasonService } from '../../../services/seasons/season.service';
 import { EloMemberService } from '../../../services/members/elo-member.service';
 import { PlayerCategory } from '../../../entity/tabt-input.interface';
 import { MembersSearchIndexService } from '../../../services/members/members-search-index.service';
+import { MemberCategoryService } from '../../../services/members/member-category.service';
 
 jest.mock('../../../services/members/member.service');
 jest.mock('../../../services/seasons/season.service');
 jest.mock('../../../services/members/elo-member.service');
 jest.mock('../../../services/members/members-search-index.service');
+jest.mock('../../../services/members/member-category.service');
 
 describe('MemberController', () => {
   let controller: MemberController;
@@ -22,7 +24,7 @@ describe('MemberController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MemberController],
-      providers: [MemberService, SeasonService, EloMemberService, MembersSearchIndexService],
+      providers: [MemberService, SeasonService, EloMemberService, MembersSearchIndexService, MemberCategoryService],
     }).compile();
 
     controller = module.get<MemberController>(MemberController);
@@ -103,7 +105,7 @@ describe('MemberController', () => {
     it('should throw 404 exeption if not found', async () => {
       const input: WeeklyNumericRankingInput = {
         season: 18,
-        category: PlayerCategory.MEN,
+        category: PLAYER_CATEGORY.MEN,
       };
       jest.spyOn(eloService, 'getBelNumericRanking').mockResolvedValue([]);
 
@@ -118,7 +120,7 @@ describe('MemberController', () => {
       jest.spyOn(seasonService, 'getCurrentSeason').mockResolvedValue({ Season: 18, IsCurrent: true, Name: '2018' });
       const result = await controller.findNumericRankings(123, input);
       expect(result).toBe(expectedResult);
-      expect(eloService.getBelNumericRanking).toHaveBeenCalledWith(123, 18, undefined);
+      expect(eloService.getBelNumericRanking).toHaveBeenCalledWith(123, 18, PlayerCategory.MEN);
     });
   });
 });

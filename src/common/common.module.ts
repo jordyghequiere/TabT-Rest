@@ -1,5 +1,4 @@
-import { CacheModule, Module, Provider } from '@nestjs/common';
-import { createClientAsync } from 'soap';
+import { CacheModule, CacheStore, Logger, Module, Provider } from '@nestjs/common';
 import { CacheService } from './cache/cache.service';
 import { ContextService } from './context/context.service';
 import { CredentialsService } from './tabt-client/credentials.service';
@@ -8,29 +7,31 @@ import { TabtClientService } from './tabt-client/tabt-client.service';
 import { TabtClientSwitchingService } from './tabt-client/tabt-client-switching.service';
 import { PackageService } from './package/package.service';
 import { HeaderKeys, TABT_HEADERS } from './context/context.constants';
-import { ConfigModule } from '@nestjs/config';
-import * as redisStore from 'cache-manager-redis-store';
-import { DatadogService } from './logger/datadog.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import {redisStore} from 'cache-manager-redis-store';
 import { LoggerModule } from 'nestjs-pino';
 import pino from 'pino';
 import { cloneDeep } from 'lodash';
+import { SocksProxyHttpClient } from './socks-proxy/socks-proxy-http-client';
+import { createSoapClient } from './tabt-client/soap-client.factory';
+import { memoryStore } from 'cache-manager';
+import { CacheModuleOptsFactory } from './cache/cache-module-opts.factory';
+
 
 const asyncProviders: Provider[] = [
   {
     provide: 'tabt-aftt',
-    useFactory: async () => {
-      return createClientAsync(process.env.AFTT_WSDL, {
-        returnFault: true,
-      });
+    useFactory: async (configService, socksProxy) => {
+      return createSoapClient(process.env.AFTT_WSDL);
     },
+    inject: [ConfigService, SocksProxyHttpClient],
   },
   {
     provide: 'tabt-vttl',
-    useFactory: async () => {
-      return createClientAsync(process.env.VTLL_WSDL, {
-        returnFault: true,
-      });
+    useFactory: async (configService, socksProxy) => {
+      return createSoapClient(process.env.VTLL_WSDL);
     },
+    inject: [ConfigService, SocksProxyHttpClient],
   },
   {
     provide: 'TABT_HEADERS',
@@ -41,31 +42,25 @@ const asyncProviders: Provider[] = [
 @Module({
   imports: [
     CacheModule.registerAsync({
-      useFactory: () => {
-        const redisUrl = process.env.REDIS_TLS_URL;
-        if (redisUrl) {
-          return {
-            store: redisStore,
-            url: redisUrl,
-          };
-        } else {
-          return null;
-        }
-      },
+      useClass: CacheModuleOptsFactory,
+      imports: [ConfigModule],
     }),
     ConfigModule,
     LoggerModule.forRoot({
         pinoHttp: {
-            level: 'debug',
-            transport: { target: 'pino-pretty' },
-            serializers: {
-              req: pino.stdSerializers.wrapRequestSerializer(r => {
-                const clonedReq = cloneDeep(r);
-                delete clonedReq.headers[HeaderKeys.X_TABT_PASSWORD.toLowerCase()];
-                return clonedReq;
-              }),
-            },
+          level: 'debug',
+          transport: { target: 'pino-pretty' },
+          quietReqLogger: true,
+          serializers: {
+            req: pino.stdSerializers.wrapRequestSerializer(r => {
+              const clonedReq = cloneDeep(r);
+              delete clonedReq.headers[HeaderKeys.X_TABT_PASSWORD.toLowerCase()];
+              return clonedReq;
+            }),
+            err: pino.stdSerializers.err,
+            res: pino.stdSerializers.res,
           },
+        },
       },
     ),
   ],
@@ -78,7 +73,7 @@ const asyncProviders: Provider[] = [
     TabtClientService,
     TabtClientSwitchingService,
     PackageService,
-    DatadogService,
+    SocksProxyHttpClient,
   ],
   exports: [
     ...asyncProviders,
@@ -86,7 +81,8 @@ const asyncProviders: Provider[] = [
     ContextService,
     TabtClientService,
     PackageService,
-    DatadogService,
+    SocksProxyHttpClient,
+    ConfigModule,
   ],
 })
 export class CommonModule {

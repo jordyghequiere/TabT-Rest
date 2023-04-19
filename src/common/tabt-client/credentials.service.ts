@@ -17,10 +17,8 @@ export class CredentialsService {
       Password: callerContext[HeaderKeys.X_TABT_PASSWORD],
       // nBehalfOf: Number(callerContext[HeaderKeys.X_TABT_ONBEHALFOF]),
     };
-
-
-    if (callerContext[HeaderKeys.X_TABT_SEASON]) {
-      input['Season'] = Number(callerContext[HeaderKeys.X_TABT_SEASON]);
+    if (!input['Season']) {
+      input['Season'] = callerContext[HeaderKeys.X_TABT_SEASON] ? Number(callerContext[HeaderKeys.X_TABT_SEASON]) : this.contextService.context.runner.season;
     }
 
     if (credentials.Account && credentials.Password) {

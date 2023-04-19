@@ -6,6 +6,9 @@ import { TeamMatchesEntry } from '../../entity/tabt-soap/TabTAPI_Port';
 import { CacheService, TTL_DURATION } from '../../common/cache/cache.service';
 import { firstValueFrom } from 'rxjs';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SocksProxyHttpClient } from '../../common/socks-proxy/socks-proxy-http-client';
+import { ConfigService } from '@nestjs/config';
+import { UserAgentsUtil } from '../../common/utils/user-agents.util';
 
 export interface ExtractedMatchInfo {
   weekName?: string,
@@ -66,6 +69,8 @@ export class Head2headService {
     private readonly httpService: HttpService,
     private readonly matchService: MatchService,
     private readonly cacheService: CacheService,
+    private readonly socksProxyService: SocksProxyHttpClient,
+    private readonly configService: ConfigService,
   ) {
   }
 
@@ -97,11 +102,16 @@ export class Head2headService {
   private async getPageFromAFTT(playerA: number, playerB: number): Promise<string> {
     const result = await firstValueFrom(
       this.httpService.post(`https://resultats.aftt.be/index.php?menu=4&head=1&player_1=${playerA}&player_2=${playerB}`, {
-        responseType: 'text',
-        maxRedirects: 0,
-      }),
+          responseType: 'text',
+          maxRedirects: 0,
+        },
+        {
+          headers: {
+            'user-agent': UserAgentsUtil.random,
+          },
+          httpsAgent: this.configService.get('USE_SOCKS_PROXY') === 'true' ? this.socksProxyService.createHttpsAgent() : undefined,
+        }),
     );
-
     return result.data;
   }
 
@@ -235,7 +245,7 @@ export class Head2headService {
       firstVictory,
       lastDefeat,
       matchEntryHistory,
-      playersInfo
+      playersInfo,
     };
 
   }

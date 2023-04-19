@@ -11,7 +11,7 @@ import {
   GetMatchesOutput,
   GetMatchSystemsInput,
   GetMatchSystemsOutput,
-  GetMembersInput,
+  GetMembersInput, GetPlayerCategoriesInput, GetPlayerCategoriesResponse,
   GetSeasonsInput,
   GetTournamentsInput,
   IGetDivisionsOutput,
@@ -100,7 +100,7 @@ export class TabtClientService {
   }
 
   GetMatchesAsync(input: GetMatchesInput): Promise<GetMatchesOutput> {
-    this.logger.log('Request Test method');
+    this.logger.log('Request GetMatchesAsync method', input);
     const getter = async (input, options, headers) => {
       const [result] = await this.tabtClientSwitchingService.tabtClient.GetMatchesAsync(input, options, headers);
       return result;
@@ -112,18 +112,19 @@ export class TabtClientService {
     this.logger.log('Request GetMembers method');
     const getter = async (input, options, headers) => {
       const [result] = await this.tabtClientSwitchingService.tabtClient.GetMembersAsync(input, options, headers);
-      if (getMembersInput.UniqueIndex &&
-        getMembersInput.WithResults &&
-        result.MemberEntries?.length === 1 &&
-        !result.MemberEntries[0].ResultCount &&
-        result.MemberEntries[0].ResultCount !== 0
-      ) {
-        this.logger.error({ inputToTabT: getMembersInput, outputFromTabT: result }, 'TabT-rest asked for member results but none were retrieved');
-        throw new Error('Requested results but none were retrieved');
-      }
       return result;
     };
-    return this.enrichBodyAndQueryWithCache('members', getMembersInput, getter, TTL_DURATION.TWELVE_HOURS);
+    return this.enrichBodyAndQueryWithCache('members', getMembersInput, getter, TTL_DURATION.EIGHT_HOURS);
+  }
+
+
+  GetMembersCategoriesAsync(getMembersInput: GetPlayerCategoriesInput): Promise<GetPlayerCategoriesResponse> {
+    this.logger.log('Request GetMembersCategories method');
+    const getter = async (input, options, headers) => {
+      const [result] = await this.tabtClientSwitchingService.tabtClient.GetPlayerCategoriesAsync(input, options, headers);
+      return result;
+    };
+    return this.enrichBodyAndQueryWithCache('members-categories', getMembersInput, getter, TTL_DURATION.ONE_DAY * 2);
   }
 
   UploadAsync(input: IUploadInput): Promise<[IUploadOutput, string, { [k: string]: any; }, any, any]> {

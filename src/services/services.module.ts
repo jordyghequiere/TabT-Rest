@@ -17,6 +17,8 @@ import { Head2headService } from './members/head2head.service';
 import { EloMemberService } from './members/elo-member.service';
 import { MatchesMembersRankerService } from './matches/matches-members-ranker.service';
 import { MembersSearchIndexService } from './members/members-search-index.service';
+import { MemberCategoryService } from './members/member-category.service';
+import { DataAfftTokenRefresherService } from './members/data-afft-token-refresher.service';
 
 const services = [
   ClubService,
@@ -34,7 +36,9 @@ const services = [
   Head2headService,
   EloMemberService,
   MatchesMembersRankerService,
-  MembersSearchIndexService
+  MembersSearchIndexService,
+  MemberCategoryService,
+  DataAfftTokenRefresherService
 ];
 
 @Module({

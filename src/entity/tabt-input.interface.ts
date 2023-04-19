@@ -31,12 +31,19 @@ export enum MemberStatus {
   INDIVIDUAL_PLAYER = 'N',
   EXTERN = 'E'
 }
+
+
+// OUTDATED
+// TO REFACTOR
 export enum PlayerCategory {
   MEN = 1,
   WOMEN = 2,
   VETERANS = 3,
   VETERANS_WOMEN = 4,
   YOUTH = 5,
+  MEN_POST_23 = 37,
+  WOMEN_POST_23 = 38,
+  YOUTH_POST_23 = 41
 }
 
 export enum ClubCategory {
